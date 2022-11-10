@@ -1,7 +1,8 @@
 #include "acinator.h"
 
 #define LONG_LINE "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n"
-#define MAX_SIZE_FEATURE 40
+const size_t MAX_SIZE_FEATURE = 40;
+const size_t MAX_SIZE_NAME_FILE = 20;
 const int noMACROS = 'n';
 const int NOMACROS = 'N';
 const int yesMACROS = 'y';
@@ -58,7 +59,9 @@ void guessingMode (nodeTree_t ** tree, FILE * log)
 	if ((*tree)->feature == nullptr)
 	{
 		printf ("There is not a single element in the tree\n");
-		createFirstNode (tree);
+		printf ("What do you want: to create [n]ew tree or to [u]pload your tree to the program?\n");
+		selectionInGuessingMode (tree);
+
 	}
 	else
 	{
@@ -66,6 +69,26 @@ void guessingMode (nodeTree_t ** tree, FILE * log)
 	}
 
 	operatingMode (*tree, log);
+}
+
+void selectionInGuessingMode (nodeTree_t ** tree)
+{
+	MY_ASSERT (tree == nullptr, "There is no access to the tree");
+
+	int answer = getchar ();
+    MY_ASSERT (answer == EOF, "Command processing error");
+
+	printf ("IN PROCESS ANSWER: answer = %c and in ascii \"%d\"\n", answer, answer);
+
+    while (getchar() != '\n') {;}
+
+	if (answer == 'n') createFirstNode (tree);
+	else if (answer == 'u') uploadTree (tree);
+	else
+	{
+		printf ("Please, enter letter \"Y\" or \"y\" if you're agree with question, and \"N\" or \"n\" otherwise\n");
+		selectionInGuessingMode(tree);
+	}
 }
 
 void treeTraversal (nodeTree_t * currentNode)
@@ -209,22 +232,6 @@ int my_strcmp (const char * string1, const char * string2)
 	return (tolower(string1[i]) - tolower(string2[j]));
 }
 
-// void exitWithSaving (nodeTree_t * node, FILE * log)
-// {
-// 	MY_ASSERT (node == nullptr, "There is no access to the node of the tree");
-//
-// 	fprintf (log, "(%s ", node->feature);
-//
-// 	// if (node->leftDescendant) fprintf (log, "node->leftDescendant = %s\n",node->leftDescendant->feature);
-// 	// if (node->rightDescendant) fprintf (log, "node->rightDescendant = %s\n", node->rightDescendant->feature);
-//
-// 	if (node->leftDescendant != nullptr) exitWithSaving (node->leftDescendant, log);
-//
-// 	if (node->rightDescendant != nullptr) exitWithSaving (node->rightDescendant, log);
-// 	fprintf (log, ")");
-// 	printf ("ok\n");
-// }
-
 void exitWithSaving (nodeTree_t * node, FILE * log, unsigned isLast, unsigned int numTABs)
 {
  	MY_ASSERT (node == nullptr, "There is no access to the node of the tree");
@@ -255,7 +262,7 @@ void exitWithSaving (nodeTree_t * node, FILE * log, unsigned isLast, unsigned in
 		}
 	}
 	else
-		fprintf (log, "%s\n", node->feature);
+		fprintf (log, ".%s\n", node->feature);
 }
 
 void printfTAB (unsigned int numTABs, FILE * log)
@@ -289,9 +296,151 @@ int processAnswer (void)
 	return -3;
 }
 
-// void createTreeFromFile (nodeTree_t * tree) //void?
-// {
-// 	MY_ASSERT (tree == nullptr, "There is no access to tree");
-//
-//
-// }
+void uploadTree (nodeTree_t ** tree) //void?
+{
+	MY_ASSERT (tree == nullptr, "There is no access to tree");
+
+	infoAboutCustomTree_t customTree = {};
+	readingFile (&customTree);
+	correctBuf (&customTree);
+
+	char ** arrayStrings = selectPlace(customTree.nStrings);
+	fillingArrayOfPtrs (customTree.sizeFile, customTree.nStrings, arrayStrings, customTree.bufWithTree);
+
+	for (int i = 0; i < customTree.nStrings; i++)
+	{
+		printf ("arrayStrings[%d] = %s\n", i, arrayStrings[i]);
+	}
+	printf ("customTree.nStrings = %zu\n", customTree.nStrings);
+	printf ("before calloc\n");
+	*tree = (nodeTree_t *) calloc (customTree.nStrings, sizeof (nodeTree_t));
+	printf ("after calloc\n");
+	MY_ASSERT (*tree == nullptr, "Unable to allocate new memory");
+
+	printf ("before createNode\n");
+
+	createNodeForUploadTree (*tree, customTree, arrayStrings);
+	printf ("end of work of func UPLOAD_TREE");
+}
+
+void createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings)
+{
+	char * ptrToQuestion = nullptr;
+	char * ptrToFeature  = nullptr;
+	for (size_t i = 0; i < customTree.nStrings; i++, node++)
+	{
+		if ((ptrToQuestion = strchr(arrayStrings[i], '?')) != nullptr)
+		{
+			node->feature = readStringFromBuf(ptrToQuestion+1);
+			printf ("node->feature = %s\n", node->feature);
+			node->leftDescendant = node+1;
+			node->rightDescendant = node+2;
+			node->leftDescendant->parent = node->rightDescendant->parent = node;
+		}
+		else
+		{
+			ptrToFeature = strchr(arrayStrings[i], '.');
+			if (ptrToFeature == nullptr)
+			{
+				printf ("The element cannot be found\n");
+				continue;
+			}
+			node->feature = readStringFromBuf(ptrToFeature+1);
+		}
+	}
+}
+
+void getString (char * nameFile)
+{
+	MY_ASSERT (nameFile == nullptr, "Error when transferring the file name");
+
+	scanf ("%s", nameFile);
+	while (getchar() != '\n') {;} //??????
+}
+
+void readingFile (infoAboutCustomTree_t * customTree)
+{
+	struct stat fileInfo;
+	printf ("Please enter the name of the file where your tree is located\n");
+
+	char * nameFile = (char *) calloc (MAX_SIZE_NAME_FILE, sizeof(char));
+	MY_ASSERT (nameFile == nullptr, "Unable to allocate new memory");
+
+	getString (nameFile);
+	printf ("nameFile = %s\n", nameFile);
+
+	FILE * inputTree = fopen ((const char *) nameFile, "rb");
+	MY_ASSERT (inputTree == nullptr, "Unable to open the file with your tree");
+
+	stat ((const char *) nameFile, &fileInfo);
+
+	customTree->sizeFile = fileInfo.st_size;
+	printf ("customTree->sizeFile = %zu\n", customTree->sizeFile);
+
+	customTree->bufWithTree = (char *) calloc (customTree->sizeFile + 1, sizeof(char));
+	MY_ASSERT (customTree->bufWithTree == nullptr, "Error in allocating memory for saving");
+	(customTree->bufWithTree)[customTree->sizeFile] = '\0';
+
+	fread (customTree->bufWithTree, customTree->sizeFile+1, 1, inputTree); //нужен ли +1?
+
+	// FILE * forDump = fopen ("dump.txt", "wb");
+	// MY_ASSERT (forDump == nullptr, "Unable to open dump.txt");
+	// fwrite (customTree->bufWithTree, customTree->sizeFile+1, 1, forDump);
+}
+
+void correctBuf (infoAboutCustomTree_t * const customTree)
+{
+	for (int i = 0; i < customTree->sizeFile; i++)
+	{
+		if ((customTree->bufWithTree)[i] == '\n')
+		{
+			(customTree->bufWithTree)[i] = '\0';
+			customTree->nStrings++;
+		}
+	}
+	customTree->nStrings = customTree->nStrings - 1;
+}
+
+char ** selectPlace (size_t nStrings)
+{
+	char ** array = (char **) calloc (nStrings, sizeof (char *));
+	MY_ASSERT (array == nullptr, "Unable to allocate new memory\n");
+	return array;
+}
+
+void fillingArrayOfPtrs (size_t nElems, size_t nStrings, char ** arrayStrings, char * bufElems)
+{
+	MY_ASSERT (arrayStrings == nullptr, "There is no access to array of strings");
+	MY_ASSERT (bufElems == nullptr, "There is no access to buffer of elements");
+
+	arrayStrings[0] = bufElems;
+	size_t j = 1;
+	for (size_t i = 0; i < nElems && *bufElems != EOF; i++)
+	{
+		if (*bufElems == '\0')
+		{
+			arrayStrings[j] = bufElems+1;
+			j++;
+		}
+		bufElems++;
+	}
+
+	if (nStrings == j+1)
+		printf ("j == nStrings\n");
+}
+
+char * readStringFromBuf (char * bufSource)
+{
+	char * bufDstn = (char *) calloc (MAX_SIZE_FEATURE, sizeof(char));
+	MY_ASSERT (bufDstn == nullptr, "Unable to allocate new memory for the buf");
+	MY_ASSERT (bufSource == nullptr, "There is no access to buf");
+
+	for (size_t nSym = 0; *bufSource != '\0' && nSym < MAX_SIZE_FEATURE; nSym++, bufSource++, bufDstn++)
+	{
+		*bufDstn = *bufSource;
+	}
+	printf ("bufDstn = %s\n", bufDstn);
+	printf ("bufSource = %s\n", bufSource);
+
+	return bufDstn;
+}
