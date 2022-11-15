@@ -39,6 +39,7 @@ void operatingMode (nodeTree_t * tree, FILE * log)
 							 selectionInGuessingMode (&tree);
 						 }
 						 compareObject (tree, log);
+						 exitWithSaving (tree, log, NO_LAST, 0);
 						 operatingMode (tree, log);
 						}
 	else if (cmd == 52) {
@@ -49,6 +50,7 @@ void operatingMode (nodeTree_t * tree, FILE * log)
 							 selectionInGuessingMode (&tree);
 						 }
 						 showTree (tree, log);
+						 operatingMode (tree, log);
 						}
 	else if (cmd == 53) {
 						 exitWithSaving (tree, log, NO_LAST, 0);
@@ -113,6 +115,8 @@ static void createHTMLfileTree(const char * nameFileDump, unsigned int * timesCr
 	char namePicture[60] = {};
     sprintf (namePicture, "graph%u.png", *timesCreatePicture);
 
+	// printf ("namePicture = %s\n", namePicture);
+
 	fprintf (treeHTML, "<pre>\n");
 	fprintf (treeHTML, "<img src=\"%s\" alt=\"dump №%u\"/>\n", namePicture, *timesCreatePicture);
 	fprintf (treeHTML, "</pre>\n");
@@ -126,16 +130,16 @@ static void createHTMLfileTree(const char * nameFileDump, unsigned int * timesCr
 void nodeGraph (const nodeTree_t * node, FILE * graphicDump)
 {
 	if (node->leftDescendant == nullptr && node->rightDescendant == nullptr)
-		dumplineTree ("\t \"%s\"[style = filled, color = black, fillcolor = orange]", node->feature);
+		dumplineTree ("\t \"%s\"[style = filled, color = black, fillcolor = orange];\n", node->feature);
 
 	else
-		dumplineTree ("\t \"%s\"[style = filled, color = black, fillcolor = orange]", node->feature);
+		dumplineTree ("\t \"%s\"[style = filled, color = black, fillcolor = orange];\n", node->feature);
 
 	if (node->leftDescendant != nullptr)
-		dumplineTree ("\t \"%s\" -> \"%s\" [label=\"yes\"]", node->feature, node->leftDescendant->feature);
+		dumplineTree ("\t \"%s\" -> \"%s\" [label=\"yes\"];\n", node->feature, node->leftDescendant->feature);
 
 	if (node->rightDescendant != nullptr)
-		dumplineTree ("\t \"%s\" -> \"%s\" [label=\"no\"]", node->feature, node->rightDescendant->feature);
+		dumplineTree ("\t \"%s\" -> \"%s\" [label=\"no\"];\n", node->feature, node->rightDescendant->feature);
 
 	if (node->leftDescendant != nullptr) nodeGraph (node->leftDescendant, graphicDump);
 
@@ -590,7 +594,7 @@ void exitWithSaving (nodeTree_t * node, FILE * log, unsigned int isLast, unsigne
  	MY_ASSERT (node == nullptr, "There is no access to the node of the tree");
 	MY_ASSERT (log == nullptr, "There is no access to the logfile");
 
-	printf ("numTABs = %u\n", numTABs);
+	// printf ("numTABs = %u\n", numTABs);
 	printfTAB (numTABs, log);
 	if (isLast == NO_LAST)
 	{
@@ -598,26 +602,26 @@ void exitWithSaving (nodeTree_t * node, FILE * log, unsigned int isLast, unsigne
 		printf ("\nKKKKEEEEEEEEEEEKKKKK\n\n");
 		if (node->leftDescendant->leftDescendant == nullptr && node->leftDescendant->rightDescendant == nullptr)
 		{
-			printf ("node->leftDescendant/LAST = %p\n", node->leftDescendant);
+			// printf ("node->leftDescendant/LAST = %p\n", node->leftDescendant);
 			printf ("node->leftDescendant->feature/LAST = %s\n", node->leftDescendant->feature);
 			exitWithSaving (node->leftDescendant, log, LAST, ++numTABs);
 		}
 		else
 		{
-			printf ("node->leftDescendant/NO_LAST = %p\n", node->leftDescendant);
+			// printf ("node->leftDescendant/NO_LAST = %p\n", node->leftDescendant);
 			printf ("node->leftDescendant->feature/NO_LAST = %s\n", node->leftDescendant->feature);
 			exitWithSaving (node->leftDescendant, log, NO_LAST, ++numTABs);
 		}
 
 		if (node->rightDescendant->leftDescendant == nullptr && node->rightDescendant->rightDescendant == nullptr)
 		{
-			printf ("node->rightDescendant/LAST = %p\n", node->rightDescendant);
+			// printf ("node->rightDescendant/LAST = %p\n", node->rightDescendant);
 			printf ("node->rightDescendant->feature/LAST = %s\n", node->rightDescendant->feature);
 			exitWithSaving (node->rightDescendant, log, LAST, numTABs);
 		}
 		else
 		{
-			printf ("node->rightDescendant/NO_LAST = %p\n", node->rightDescendant);
+			// printf ("node->rightDescendant/NO_LAST = %p\n", node->rightDescendant);
 			printf ("node->rightDescendant->feature/NO_LAST = %s\n", node->rightDescendant->feature);
 			exitWithSaving (node->rightDescendant, log, NO_LAST, numTABs);
 		}
@@ -704,7 +708,8 @@ void uploadTree (nodeTree_t ** tree)
 //
 // 	printf ("before createNode\n");
 
-	createNodeForUploadTree (*tree, customTree, arrayStrings);
+	struct returnRecurtion recInfo = {};
+	createNodeForUploadTree (*tree, customTree, arrayStrings, &recInfo);
 
 	// FILE * fileDumpUploadTree = fopen ("dump.txt", "a");
 	// exitWithSaving (*tree, fileDumpUploadTree, NO_LAST, 0);
@@ -712,40 +717,83 @@ void uploadTree (nodeTree_t ** tree)
 	// printf ("end of work of func UPLOAD_TREE\n\n");
 }
 
-void createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings)
+nodeTree_t * createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings, struct returnRecurtion * recInfo)
 {
-
-	// printf (LONG_LINE);
-
 	char * ptrToQuestion = nullptr;
 	char * ptrToFeature  = nullptr;
-	for (size_t i = 0; i < customTree.nStrings; i++, node++)
+
+	printf ("\nThere is dump of information about custom tree:\n");
+	printf ("**nStrings = %zu\n", customTree.nStrings);
+	printf ("**sizeFile = %zu\n\n", customTree.sizeFile);
+
+	if ((ptrToQuestion = strchr(arrayStrings[recInfo->numString], '?')) != nullptr)
 	{
-		// printf ("arrayStrings[%zu] = %s\n", i, arrayStrings[i]);
-		if ((ptrToQuestion = strchr(arrayStrings[i], '?')) != nullptr)
+		node->feature = readStringFromBuf(ptrToQuestion+1);
+		node->leftDescendant = node+1;
+		node->leftDescendant->parent = node;
+		printf ("node->feature (struct:%zu) = %s\n", recInfo->numString, node->feature);
+
+		char * nameLeftDescendant = nullptr;
+		char * nameRightDescendant = nullptr;
+
+		if ((nameLeftDescendant = strchr(arrayStrings[(recInfo->numString)+1], '?')) != nullptr)
 		{
-			node->feature = readStringFromBuf(ptrToQuestion+1);
-			// printf ("?node->feature = ?%s\n", node->feature);
-			// printf ("in createNodeForUploadTree: node->feature = ?%s\n", node->feature);
-			node->leftDescendant = node+1;
+			node->leftDescendant->feature = nameLeftDescendant+1;
+			recInfo = createNodeForUploadTree (node+1, customTree, arrayStrings, (recInfo->numString)+1);
+			if (nodeIfFirstQuestion == nullptr)
+			{
+				printf ("nodeIfFirstQuestion (%zu) = nullptr\n", recInfo->numString);
+			}
+			else
+			{
+				printf ("nodeIfFirstQuestion->feature (%zu) = %s\n", recInfo->numString, nodeIfFirstQuestion->feature);
+				printf ("and now we are in node->feature = %s\n", node->feature);
+			}
+			node->rightDescendant = nodeIfFirstQuestion + 3;
+			node->rightDescendant->parent = node;
+			nodeTree_t * nodeIfSecondQuestion = createNodeForUploadTree (node->rightDescendant, customTree, arrayStrings, (recInfo->numString)+3);
+		}
+
+
+		else if ((nameRightDescendant = strchr(arrayStrings[(recInfo->numString)+2], '?')) != nullptr)
+		{
+			char * nameLeftNode = strchr(arrayStrings[(recInfo->numString)+1], '.');
+			node->leftDescendant->feature = readStringFromBuf(nameLeftNode+1);
+
 			node->rightDescendant = node+2;
-			node->leftDescendant->parent = node->rightDescendant->parent = node;
+			node->rightDescendant->feature = nameRightDescendant+1;
+			node->rightDescendant->parent = node;
+			nodeTree_t * nodeIfSecondQuestion = createNodeForUploadTree (node+2, customTree, arrayStrings, (recInfo->numString)+2);
 		}
 		else
 		{
-			ptrToFeature = strchr(arrayStrings[i], '.');
-			if (ptrToFeature == nullptr)
-			{
-				printf ("The element cannot be found\n");
-				continue;
-			}
-			node->feature = readStringFromBuf(ptrToFeature+1);
-			// printf (".node->feature = .%s\n", node->feature);
-			// printf ("in createNodeForUploadTree: .%s\n", node->feature);
+			node->rightDescendant = node+2;
+			node->rightDescendant->parent = node;
+
+			char * nameLeftFeature = strchr (arrayStrings[(recInfo->numString)+1], '.');
+			char * nameRightFeature = strchr (arrayStrings[(recInfo->numString)+2], '.');
+
+			node->leftDescendant->feature = readStringFromBuf(nameLeftFeature+1);
+			node->rightDescendant->feature = readStringFromBuf(nameRightFeature+1);
+
+			recInfo->nodeReturn = node;
+
+			return (recInfo);
 		}
 	}
-	// printf (LONG_LINE"\n");
+	else if ((ptrToFeature = strchr(arrayStrings[(recInfo->numString)+1], '.')) != nullptr)
+	{
+		node->feature = readStringFromBuf (ptrToFeature+1);
+		recInfo->nodeReturn = node;
+		return (recInfo);
+	}
+	else
+	{
+		printf ("\nERROR\n");
+	}
 }
+
+
 
 void getString (char * nameFile)
 {
@@ -812,7 +860,7 @@ void fillingArrayOfPtrs (size_t nElems, size_t nStrings, char ** arrayStrings, c
 	MY_ASSERT (bufElems == nullptr, "There is no access to buffer of elements");
 
 	arrayStrings[0] = bufElems;
-	printf ("arrayStrings[0] = %s\n", arrayStrings[0]);
+	// printf ("arrayStrings[0] = %s\n", arrayStrings[0]);
 	size_t j = 1;
 
 	// printf ("sizeof (nodeTree_t) = %zu\n", sizeof (nodeTree_t));
@@ -825,7 +873,7 @@ void fillingArrayOfPtrs (size_t nElems, size_t nStrings, char ** arrayStrings, c
 		if (*bufElems == '\0')
 		{
 			arrayStrings[j] = bufElems+1;
-			printf ("arrayStrings[%zu] = %s\n", j, arrayStrings[j]);
+			// printf ("arrayStrings[%zu] = %s\n", j, arrayStrings[j]);
 			j++;
 		}
 		bufElems++;

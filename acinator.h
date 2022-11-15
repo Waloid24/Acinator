@@ -27,6 +27,11 @@ typedef struct {
 
 typedef struct nodeTree nodeTree_t;
 
+struct returnRecurtion {
+    size_t numString;
+    nodeTree_t * nodeReturn;
+};
+
 enum IS_LAST {
     LAST,
     NO_LAST
@@ -56,7 +61,9 @@ void         addNewNode         (nodeTree_t * currentNode);
 int          processAnswer      (void);
 
 void         uploadTree               (nodeTree_t ** tree);
-void         createNodeForUploadTree  (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings);
+//nodeTree_t * createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings, int i);
+nodeTree_t * createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings, struct returnRecurtion * recInfo);
+
 void         getString                (char * nameFile);
 void         readingFile              (infoAboutCustomTree_t * customTree);
 void         correctBuf               (infoAboutCustomTree_t * const customTree);
