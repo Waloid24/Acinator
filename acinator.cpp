@@ -709,6 +709,7 @@ void uploadTree (nodeTree_t ** tree)
 // 	printf ("before createNode\n");
 
 	struct returnRecurtion recInfo = {};
+	recInfo.numString = 0;
 	createNodeForUploadTree (*tree, customTree, arrayStrings, recInfo);
 
 	// FILE * fileDumpUploadTree = fopen ("dump.txt", "a");
@@ -724,7 +725,8 @@ struct returnRecurtion createNodeForUploadTree (nodeTree_t * node, infoAboutCust
 
 	printf ("\nThere is dump of information about custom tree:\n");
 	printf ("**nStrings = %zu\n", customTree.nStrings);
-	printf ("**sizeFile = %zu\n\n", customTree.sizeFile);
+	printf ("**sizeFile = %zu\n", customTree.sizeFile);
+	printf ("arrayStrings[%zu] = %s\n\n", recInfo.numString, arrayStrings[recInfo.numString]);
 
 	if ((ptrToQuestion = strchr(arrayStrings[recInfo.numString], '?')) != nullptr)
 	{
@@ -751,10 +753,21 @@ struct returnRecurtion createNodeForUploadTree (nodeTree_t * node, infoAboutCust
 				printf ("recInfo.nodeReturn->feature (%zu) = %s\n", recInfo.numString, (recInfo.nodeReturn)->feature);
 				printf ("and now we are in node->feature = %s\n", node->feature);
 			}
-			node->rightDescendant = recInfo.nodeReturn + 3;
-			node->rightDescendant->parent = node;
-			recInfo.numString = recInfo.numString+3;
-			struct returnRecurtion nodeIfSecondQuestion = createNodeForUploadTree (node->rightDescendant, customTree, arrayStrings, recInfo);
+
+			if (strchr(arrayStrings[recInfo.numString], '?'))
+			{
+				node->rightDescendant = recInfo.nodeReturn + 3;
+				node->rightDescendant->parent = node;
+				recInfo.numString = recInfo.numString+3;
+				struct returnRecurtion nodeIfSecondQuestion = createNodeForUploadTree (node->rightDescendant, customTree, arrayStrings, recInfo);
+			}
+			else
+			{
+				node->rightDescendant = recInfo.nodeReturn + 1;
+				node->rightDescendant->parent = node;
+				recInfo.numString = recInfo.numString+1;
+				struct returnRecurtion nodeIfSecondQuestion = createNodeForUploadTree (node->rightDescendant, customTree, arrayStrings, recInfo);
+			}
 		}
 
 
@@ -771,6 +784,8 @@ struct returnRecurtion createNodeForUploadTree (nodeTree_t * node, infoAboutCust
 		}
 		else
 		{
+			printf ("I'm here!\n");
+
 			node->rightDescendant = node+2;
 			node->rightDescendant->parent = node;
 
@@ -785,7 +800,7 @@ struct returnRecurtion createNodeForUploadTree (nodeTree_t * node, infoAboutCust
 			return (recInfo);
 		}
 	}
-	else if ((ptrToFeature = strchr(arrayStrings[(recInfo.numString)+1], '.')) != nullptr)
+	else if ((ptrToFeature = strchr(arrayStrings[(recInfo.numString)], '.')) != nullptr) //arrayStrings[(recInfo.numString)+1]
 	{
 		node->feature = readStringFromBuf (ptrToFeature+1);
 		recInfo.nodeReturn = node;
