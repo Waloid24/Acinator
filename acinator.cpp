@@ -709,7 +709,7 @@ void uploadTree (nodeTree_t ** tree)
 // 	printf ("before createNode\n");
 
 	struct returnRecurtion recInfo = {};
-	createNodeForUploadTree (*tree, customTree, arrayStrings, &recInfo);
+	createNodeForUploadTree (*tree, customTree, arrayStrings, recInfo);
 
 	// FILE * fileDumpUploadTree = fopen ("dump.txt", "a");
 	// exitWithSaving (*tree, fileDumpUploadTree, NO_LAST, 0);
@@ -717,7 +717,7 @@ void uploadTree (nodeTree_t ** tree)
 	// printf ("end of work of func UPLOAD_TREE\n\n");
 }
 
-nodeTree_t * createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings, struct returnRecurtion * recInfo)
+struct returnRecurtion createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings, struct returnRecurtion recInfo)
 {
 	char * ptrToQuestion = nullptr;
 	char * ptrToFeature  = nullptr;
@@ -726,65 +726,69 @@ nodeTree_t * createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t c
 	printf ("**nStrings = %zu\n", customTree.nStrings);
 	printf ("**sizeFile = %zu\n\n", customTree.sizeFile);
 
-	if ((ptrToQuestion = strchr(arrayStrings[recInfo->numString], '?')) != nullptr)
+	if ((ptrToQuestion = strchr(arrayStrings[recInfo.numString], '?')) != nullptr)
 	{
 		node->feature = readStringFromBuf(ptrToQuestion+1);
 		node->leftDescendant = node+1;
 		node->leftDescendant->parent = node;
-		printf ("node->feature (struct:%zu) = %s\n", recInfo->numString, node->feature);
+		printf ("node->feature (struct:%zu) = %s\n", recInfo.numString, node->feature);
 
 		char * nameLeftDescendant = nullptr;
 		char * nameRightDescendant = nullptr;
 
-		if ((nameLeftDescendant = strchr(arrayStrings[(recInfo->numString)+1], '?')) != nullptr)
+		if ((nameLeftDescendant = strchr(arrayStrings[(recInfo.numString)+1], '?')) != nullptr)
 		{
 			node->leftDescendant->feature = nameLeftDescendant+1;
-			recInfo = createNodeForUploadTree (node+1, customTree, arrayStrings, (recInfo->numString)+1);
-			if (nodeIfFirstQuestion == nullptr)
+			struct returnRecurtion forSaveIngoThisNode = recInfo;
+			recInfo.numString = recInfo.numString+1;
+			recInfo = createNodeForUploadTree (node+1, customTree, arrayStrings, recInfo);
+			if (recInfo.nodeReturn == nullptr)
 			{
-				printf ("nodeIfFirstQuestion (%zu) = nullptr\n", recInfo->numString);
+				printf ("recInfo.nodeReturn (%zu) = nullptr\n", recInfo.numString);
 			}
 			else
 			{
-				printf ("nodeIfFirstQuestion->feature (%zu) = %s\n", recInfo->numString, nodeIfFirstQuestion->feature);
+				printf ("recInfo.nodeReturn->feature (%zu) = %s\n", recInfo.numString, (recInfo.nodeReturn)->feature);
 				printf ("and now we are in node->feature = %s\n", node->feature);
 			}
-			node->rightDescendant = nodeIfFirstQuestion + 3;
+			node->rightDescendant = recInfo.nodeReturn + 3;
 			node->rightDescendant->parent = node;
-			nodeTree_t * nodeIfSecondQuestion = createNodeForUploadTree (node->rightDescendant, customTree, arrayStrings, (recInfo->numString)+3);
+			recInfo.numString = recInfo.numString+3;
+			struct returnRecurtion nodeIfSecondQuestion = createNodeForUploadTree (node->rightDescendant, customTree, arrayStrings, recInfo);
 		}
 
 
-		else if ((nameRightDescendant = strchr(arrayStrings[(recInfo->numString)+2], '?')) != nullptr)
+		else if ((nameRightDescendant = strchr(arrayStrings[(recInfo.numString)+2], '?')) != nullptr)
 		{
-			char * nameLeftNode = strchr(arrayStrings[(recInfo->numString)+1], '.');
+			char * nameLeftNode = strchr(arrayStrings[(recInfo.numString)+1], '.');
 			node->leftDescendant->feature = readStringFromBuf(nameLeftNode+1);
 
 			node->rightDescendant = node+2;
 			node->rightDescendant->feature = nameRightDescendant+1;
 			node->rightDescendant->parent = node;
-			nodeTree_t * nodeIfSecondQuestion = createNodeForUploadTree (node+2, customTree, arrayStrings, (recInfo->numString)+2);
+			recInfo.numString = recInfo.numString+2;
+			struct returnRecurtion nodeIfSecondQuestion = createNodeForUploadTree (node+2, customTree, arrayStrings, recInfo);
 		}
 		else
 		{
 			node->rightDescendant = node+2;
 			node->rightDescendant->parent = node;
 
-			char * nameLeftFeature = strchr (arrayStrings[(recInfo->numString)+1], '.');
-			char * nameRightFeature = strchr (arrayStrings[(recInfo->numString)+2], '.');
+			char * nameLeftFeature = strchr (arrayStrings[(recInfo.numString)+1], '.');
+			char * nameRightFeature = strchr (arrayStrings[(recInfo.numString)+2], '.');
 
 			node->leftDescendant->feature = readStringFromBuf(nameLeftFeature+1);
 			node->rightDescendant->feature = readStringFromBuf(nameRightFeature+1);
 
-			recInfo->nodeReturn = node;
+			recInfo.nodeReturn = node;
 
 			return (recInfo);
 		}
 	}
-	else if ((ptrToFeature = strchr(arrayStrings[(recInfo->numString)+1], '.')) != nullptr)
+	else if ((ptrToFeature = strchr(arrayStrings[(recInfo.numString)+1], '.')) != nullptr)
 	{
 		node->feature = readStringFromBuf (ptrToFeature+1);
-		recInfo->nodeReturn = node;
+		recInfo.nodeReturn = node;
 		return (recInfo);
 	}
 	else

@@ -62,7 +62,7 @@ int          processAnswer      (void);
 
 void         uploadTree               (nodeTree_t ** tree);
 //nodeTree_t * createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings, int i);
-nodeTree_t * createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings, struct returnRecurtion * recInfo);
+struct returnRecurtion createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings, struct returnRecurtion recInfo);
 
 void         getString                (char * nameFile);
 void         readingFile              (infoAboutCustomTree_t * customTree);
