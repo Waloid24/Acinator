@@ -6,12 +6,11 @@
 
 const size_t MAX_SIZE_FEATURE = 40;
 const size_t MAX_SIZE_NAME_FILE = 20;
+
 const int noMACROS = 'n';
 const int NOMACROS = 'N';
 const int yesMACROS = 'y';
-const int YESMACROS = 'Y';  //добавить частицы не в определение объекта: не серый
-//файл , куда будет загружаться дерево (пользователь может сам выбрать имя)
-
+const int YESMACROS = 'Y';
 
 void operatingMode (nodeTree_t * tree, FILE * log)
 {
@@ -25,54 +24,63 @@ void operatingMode (nodeTree_t * tree, FILE * log)
     printf ("5) exit with saving;    6) exit without saving\n");
     printf (LONG_LINE);
 
-	printf ("in operatingMode (ptr) tree = %p\n", tree);
-
     int cmd = processCommand ();
-	// printf ("cmd = %d\n", cmd);
-	if (cmd == 49) guessingMode (&tree, log);
-	else if (cmd == 50) definingMode (tree, log);
-	else if (cmd == 51) {
-						 if (tree->feature == nullptr)
-						 {
-							 printf ("There is not a single element in the tree\n");
-							 printf ("What do you want: to create [n]ew tree or to [u]pload your tree to the program?\n");
-							 selectionInGuessingMode (&tree);
-						 }
-						 compareObject (tree, log);
-						 exitWithSaving (tree, log, NO_LAST, 0);
-						 operatingMode (tree, log);
-						}
-	else if (cmd == 52) {
-						 if (tree->feature == nullptr)
-						 {
-							 printf ("There is not a single element in the tree\n");
-							 printf ("What do you want: to create [n]ew tree or to [u]pload your tree to the program?\n");
-							 selectionInGuessingMode (&tree);
-						 }
-						 showTree (tree, log);
-						 operatingMode (tree, log);
-						}
-	else if (cmd == 53) {
-						 exitWithSaving (tree, log, NO_LAST, 0);
-						 fprintf (log, "\n");
-						}
-	else 				printf ("You shouldn't be doing this to me\n");
+
+	if (cmd == '1')
+	{
+		guessingMode (&tree, log);
+	}
+	else if (cmd == '2')
+	{
+		definingMode (tree, log);
+	}
+	else if (cmd == '3')
+	{
+		if (tree->feature == nullptr)
+		{
+			printf ("There is not a single element in the tree\n");
+			printf ("What do you want: to create [n]ew tree or to [u]pload your tree to the program?\n");
+			selectionInGuessingMode (&tree);
+		}
+		compareObjects (tree, log);
+		exitWithSaving (tree, log, NO_LAST, 0);
+		operatingMode (tree, log);
+	}
+	else if (cmd == '4')
+	{
+		if (tree->feature == nullptr)
+		{
+			printf ("There is not a single element in the tree\n");
+			printf ("What do you want: to create [n]ew tree or to [u]pload your tree to the program?\n");
+			selectionInGuessingMode (&tree);
+		}
+		showTree (tree);
+		operatingMode (tree, log);
+	}
+	else if (cmd == '5')
+	{
+		exitWithSaving (tree, log, NO_LAST, 0);
+		fprintf (log, "\n");
+	}
+	else
+	{
+		printf ("You shouldn't be doing this to me\n");
+	}
 }
 
-void showTree (const nodeTree_t * tree, FILE * const log)
+void showTree (const nodeTree_t * tree)
 {
 	MY_ASSERT (tree == nullptr, "There is no access to tree");
-	MY_ASSERT (log == nullptr, "There is no access to logfile");
 
 	const char * nameGraphDOTfileTree = "treeGraphviz.dot";
 	const char * nameGraphHTMLfileTree = "treeGraphviz.html";
 
-	graphTree (tree, nameGraphDOTfileTree);
-	createPictureTree (nameGraphDOTfileTree, timesCreatePictureTree);
-	createHTMLfileTree (nameGraphHTMLfileTree, &timesCreatePictureTree);
+	dotFileHeaderTree 		(tree, nameGraphDOTfileTree);
+	createFileWithTreeImage (nameGraphDOTfileTree, NUMBER_GRAPHICAL_TREE_DUMPS);
+	createHTMLfileTree		(nameGraphHTMLfileTree, &NUMBER_GRAPHICAL_TREE_DUMPS);
 }
 
-void graphTree (const nodeTree_t * node, const char * nameGraphDOTfileTree)
+void dotFileHeaderTree (const nodeTree_t * node, const char * nameGraphDOTfileTree)
 {
 	MY_ASSERT (node == nullptr, "There is no access to tree");
 
@@ -90,7 +98,7 @@ void graphTree (const nodeTree_t * node, const char * nameGraphDOTfileTree)
     dumplineTree ("              penwidth = 4, color =\"#fa9fb5\", fontsize = 30];\n\n");
 
 
-	nodeGraph (node, graphicDump);
+	writeNodeToDotFile (node, graphicDump);
 
 	dumplineTree ("}\n");
 
@@ -98,7 +106,7 @@ void graphTree (const nodeTree_t * node, const char * nameGraphDOTfileTree)
 	fclose (graphicDump);
 }
 
-void createPictureTree (const char * nameDOTfile, unsigned int timesCreatePicture)
+void createFileWithTreeImage (const char * nameDOTfile, unsigned int timesCreatePicture)
 {
 	MY_ASSERT (nameDOTfile == nullptr, "There is no access to name file for graphic dump");
 
@@ -115,10 +123,10 @@ static void createHTMLfileTree(const char * nameFileDump, unsigned int * timesCr
 	char namePicture[60] = {};
     sprintf (namePicture, "graph%u.png", *timesCreatePicture);
 
-	// printf ("namePicture = %s\n", namePicture);
+	printf ("namePicture = %s\n", namePicture);
 
 	fprintf (treeHTML, "<pre>\n");
-	fprintf (treeHTML, "<img src=\"%s\" alt=\"dump №%u\"/>\n", namePicture, *timesCreatePicture);
+	fprintf (treeHTML, "<img src=\"%s\" alt=\"dump №%u\">\n", namePicture, *timesCreatePicture);
 	fprintf (treeHTML, "</pre>\n");
 
     (*timesCreatePicture)++;
@@ -127,31 +135,38 @@ static void createHTMLfileTree(const char * nameFileDump, unsigned int * timesCr
     fclose (treeHTML);
 }
 
-void nodeGraph (const nodeTree_t * node, FILE * graphicDump)
+void writeNodeToDotFile (const nodeTree_t * node, FILE * graphicDump)
 {
 	if (node->leftDescendant == nullptr && node->rightDescendant == nullptr)
+	{
 		dumplineTree ("\t \"%s\"[style = filled, color = black, fillcolor = orange];\n", node->feature);
-
+	}
 	else
+	{
 		dumplineTree ("\t \"%s\"[style = filled, color = black, fillcolor = orange];\n", node->feature);
-
+	}
 	if (node->leftDescendant != nullptr)
+	{
 		dumplineTree ("\t \"%s\" -> \"%s\" [label=\"yes\"];\n", node->feature, node->leftDescendant->feature);
-
+	}
 	if (node->rightDescendant != nullptr)
+	{
 		dumplineTree ("\t \"%s\" -> \"%s\" [label=\"no\"];\n", node->feature, node->rightDescendant->feature);
-
-	if (node->leftDescendant != nullptr) nodeGraph (node->leftDescendant, graphicDump);
-
-	if (node->rightDescendant != nullptr) nodeGraph (node->rightDescendant, graphicDump);
+	}
+	if (node->leftDescendant != nullptr)
+	{
+		writeNodeToDotFile (node->leftDescendant, graphicDump);
+	}
+	if (node->rightDescendant != nullptr)
+	{
+		writeNodeToDotFile (node->rightDescendant, graphicDump);
+	}
 }
 
 int processCommand (void)
 {
     int command = getchar ();
     MY_ASSERT (command == EOF, "Command processing error");
-
-	//printf ("command = %c and in ascii \"%d\"\n", command, command);
 
     while (getchar() != '\n') {;}
 
@@ -161,12 +176,10 @@ int processCommand (void)
         command = processCommand ();
     }
 
-	// printf ("$$$$ command = %c and in ascii \"%d\" $$$$\n", command, command);
-
 	return command;
 }
 
-int compareObject (nodeTree_t * node, FILE * log)
+int compareObjects (nodeTree_t * node, FILE * log)
 {
 	MY_ASSERT (node == nullptr, "There is no access to tree");
 	MY_ASSERT (log == nullptr, "There is no access to logfile");
@@ -195,10 +208,7 @@ int compareObject (nodeTree_t * node, FILE * log)
 		return 1;
 	}
 
-	printf ("in findObjectForCompare: firstObject = %s\n", firstObject->feature);
-	printf ("in findObjectForCompare: secondObject = %s\n", secondObject->feature);
-
-	if (my_strcmp(firstObject->feature, secondObject->feature) == 0)
+	if (myStrcmp(firstObject->feature, secondObject->feature) == 0)
 	{
 		printf ("You enter two you have entered two identical objects. Here is the definition: \n");
 		findObject (node, firstObject->feature, 0);
@@ -234,17 +244,15 @@ void printСomparison (nodeTree_t * node, nodeTree_t * firstObject, nodeTree_t *
 
 	if (firstObject->parent != nullptr && secondObject->parent != nullptr)
 	{
-		// printf ("Difference between these objects: \n");
-
-		nodeTree_t * fstObj = firstObject;
-		nodeTree_t * scndObj = secondObject;
+		nodeTree_t * fstObj = (nodeTree_t *) firstObject;
+		nodeTree_t * scndObj = (nodeTree_t *) secondObject;
 
 		printf ("The first object, unlike the second, ");
-		while (my_strcmp(fstObj->feature, scndObj->feature) != 0)
+		while (myStrcmp(fstObj->feature, scndObj->feature) != 0)
 		{
 			if (fstObj->parent != nullptr)
 			{
-				if (my_strcmp(fstObj->parent->rightDescendant->feature, fstObj->feature) == 0)
+				if (myStrcmp(fstObj->parent->rightDescendant->feature, fstObj->feature) == 0)
 					printf ("not ");
 
 				printf ("%s, ", fstObj->parent->feature);
@@ -259,15 +267,15 @@ void printСomparison (nodeTree_t * node, nodeTree_t * firstObject, nodeTree_t *
 			}
 		}
 
-		fstObj = firstObject;
-		scndObj = secondObject;
+		fstObj = (nodeTree_t * ) firstObject;
+		scndObj = (nodeTree_t * ) secondObject;
 
 		printf ("\nBut the second object ");
-		while (my_strcmp(fstObj->feature, scndObj->feature) != 0)
+		while (myStrcmp(fstObj->feature, scndObj->feature) != 0)
 		{
 			if (scndObj->parent != nullptr)
 			{
-				if (my_strcmp(scndObj->parent->rightDescendant->feature, scndObj->feature) == 0)
+				if (myStrcmp(scndObj->parent->rightDescendant->feature, scndObj->feature) == 0)
 				printf ("not ");
 			}
 			printf ("%s, ", scndObj->parent->feature);
@@ -291,9 +299,6 @@ void printСomparison (nodeTree_t * node, nodeTree_t * firstObject, nodeTree_t *
 			fstObj = fstObj->parent;
 		}
 	}
-
-	printf ("EEENNNDDD\n");
-
 }
 
 nodeTree_t * findObjectForCompare (nodeTree_t * node, char * nameObject, nodeTree_t * desiredObject)
@@ -301,30 +306,21 @@ nodeTree_t * findObjectForCompare (nodeTree_t * node, char * nameObject, nodeTre
 	MY_ASSERT (node == nullptr, "There is no access to tree");
 	MY_ASSERT (nameObject == nullptr, "There is no access to object");
 
-	// printf ("----in findObjectForCompare: nameObject = %s\n", nameObject);
-	// printf ("----in findObjectForCompare: node->feature = %s\n", node->feature);
-	// printf ("----in findObjectForCompare: desiredObject = %p\n", desiredObject);
-
-	if (my_strcmp (node->feature, nameObject) != 0)
+	if (myStrcmp (node->feature, nameObject) != 0)
 	{
 		if (node->leftDescendant != nullptr && desiredObject == nullptr)
 		{
 			desiredObject = findObjectForCompare (node->leftDescendant, nameObject, desiredObject);
-			// printf ("after leftDescendant: desiredObject = %p\n", desiredObject);
 		}
 		if (node->rightDescendant != nullptr && desiredObject == nullptr)
 		{
 			desiredObject = findObjectForCompare (node->rightDescendant, nameObject, desiredObject);
-			// printf ("after rightDescendant: desiredObject = %p\n", desiredObject);
-
 		}
 	}
 	else
 	{
-		// printf ("YEES: desiredObject = %p\n", node);
 		return node;
 	}
-	// printf ("before exit from findObjectForCompare: desiredObject = %p\n", desiredObject);
 	return desiredObject;
 }
 
@@ -333,11 +329,10 @@ void definingMode (nodeTree_t * node, FILE * log)
 	MY_ASSERT (node == nullptr, "There is no access to tree");
 	MY_ASSERT (log == nullptr, "There is no access to logfile");
 
-	printf ("Please, enter the name of the object\n");
 	char * nameObject = (char *) calloc (MAX_SIZE_FEATURE, sizeof (char));
 	MY_ASSERT (nameObject == nullptr, "Unable to allocate new memory");
 	getString (nameObject);
-	//printf ("node = %p\n", node);
+
 	unsigned char isFound = findObject (node, nameObject, 0); //0 заменить на enum с noFound
 
 	printf ("\n");
@@ -350,22 +345,13 @@ void definingMode (nodeTree_t * node, FILE * log)
 	operatingMode (node, log);
 }
 
-unsigned int findObject (nodeTree_t * node, char * nameObject, unsigned int isObejectFound) //возможно стоит каждый раз создавать переменную внутри фукнции
+unsigned int findObject (nodeTree_t * node, char * nameObject, unsigned int isObejectFound)
 {
-	//printf ("----in anotherObject: node = %p\n", node);
-	//printf ("----in anotherObject: nameObject = %s\n", nameObject);
 
 	MY_ASSERT (node == nullptr, "There is no access to tree");
 	MY_ASSERT (nameObject == nullptr, "There is no access to object");
-	//printf ("----in anotherObject: node->feature = %s\n", node->feature);
-	// printf ("----isObejectFound = %u\n", isObejectFound);
 
-	// if (node->parent != nullptr)
-	// {
-	// 	printf ("%s->parent = %s\n", node->feature, node->parent->feature);
-	// }
-
-	if (my_strcmp (node->feature, nameObject) != 0)
+	if (myStrcmp (node->feature, nameObject) != 0)
 	{
 		if (node->leftDescendant != nullptr && isObejectFound != 1)
 		{
@@ -378,7 +364,7 @@ unsigned int findObject (nodeTree_t * node, char * nameObject, unsigned int isOb
 	}
 	else
 	{
-		printf ("^^^^Definition of %s: ", nameObject);
+		printf ("Definition of %s: ", nameObject);
 		return defineOfWord (node);
 	}
 	return isObejectFound;
@@ -388,8 +374,11 @@ int defineOfWord (nodeTree_t * node)
 {
 	if (node->parent != nullptr)
 	{
-		if (my_strcmp(node->parent->rightDescendant->feature, node->feature) == 0)
-					printf ("not ");
+		if (myStrcmp(node->parent->rightDescendant->feature, node->feature) == 0)
+		{
+			printf ("not ");
+		}
+
 		printf ("%s, ", node->parent->feature);
 		defineOfWord (node->parent);
 	}
@@ -401,20 +390,16 @@ void guessingMode (nodeTree_t ** tree, FILE * log)
 	MY_ASSERT (tree == nullptr, "There is no access to tree");
 	MY_ASSERT (log == nullptr, "There is no access to logfile");
 
-	printf ("guessingMode (ptr ptr) tree = %p\n", tree);
-
 	if ((*tree)->feature == nullptr)
 	{
 		printf ("There is not a single element in the tree\n");
 		printf ("What do you want: to create [n]ew tree or to [u]pload your tree to the program?\n");
 		selectionInGuessingMode (tree);
-
 	}
 	else
 	{
 		treeTraversal (*tree);
 	}
-
 	operatingMode (*tree, log);
 }
 
@@ -489,7 +474,7 @@ void addNewNode (nodeTree_t * currentNode)
 	nodeTree_t * newNodeLeft  = (nodeTree_t *) calloc (1, sizeof (nodeTree_t));
 	MY_ASSERT (newNodeLeft  == nullptr, "Unable to allocate new memory");
 
-	printf ("Oh, this is so unexpected! Who is it?\n"); //tell me, how does this distinguish your object from the proposed one? This object
+	printf ("Oh, this is so unexpected! Who is it?\n");
 
 	newNodeLeft->feature = getFeature (newNodeLeft->feature);
 	newNodeRight->feature = currentNode->feature;
@@ -518,19 +503,13 @@ void createFirstNode (nodeTree_t ** tree)
 	if ((*tree)->leftDescendant == nullptr)
 	{
 		printf ("If this object is %s it is ...\n", (*tree)->feature);
-		//printf ("before createNew tree->leftDescendant = %p\n", tree->leftDescendant);
 		(*tree)->leftDescendant = createNewNode (*tree, (*tree)->leftDescendant);
-		//printf ("after creteNew tree->leftDescendant = %p\n", tree->leftDescendant);
 	}
 	if ((*tree)->rightDescendant == nullptr)
 	{
 		printf ("If this object isn't %s it is ...\n", (*tree)->feature);
 		(*tree)->rightDescendant = createNewNode ((*tree), (*tree)->rightDescendant);
 	}
-
-	printf ("OK! It is a %s?\n", (*tree)->feature);
-	printf ("No! It is a %s\n", (*tree)->rightDescendant->feature);
-	printf ("Yes! It is a %s\n", (*tree)->leftDescendant->feature);
 }
 
 void createFirstFeature (nodeTree_t * tree)
@@ -539,7 +518,6 @@ void createFirstFeature (nodeTree_t * tree)
 
 	printf ("Please, enter the feature of the first objects\n");
 	tree->feature = getFeature(tree->feature);
-	printf ("tree->feature = %s\n", tree->feature);
 }
 
 nodeTree_t * createNewNode (nodeTree_t * parentNewNode, nodeTree_t * placeForNewNode)
@@ -550,8 +528,6 @@ nodeTree_t * createNewNode (nodeTree_t * parentNewNode, nodeTree_t * placeForNew
 	placeForNewNode = (nodeTree_t *) calloc (1, sizeof(nodeTree_t));
 	placeForNewNode->feature = getFeature(placeForNewNode->feature);
 	placeForNewNode->parent = parentNewNode;
-
-	printf ("placeForNewNode->feature = %s\n", placeForNewNode->feature);
 
 	return placeForNewNode;
 }
@@ -566,7 +542,7 @@ elem_t * getFeature (elem_t * feature)
 	return feature;
 }
 
-int my_strcmp (const char * string1, const char * string2)
+int myStrcmp (const char * string1, const char * string2)
 {
 	int i = 0, j = 0;
 	for (; string1[i] != '\0' && string2[j] != '\0'; i++, j++)
@@ -589,54 +565,43 @@ int my_strcmp (const char * string1, const char * string2)
 	return (tolower(string1[i]) - tolower(string2[j]));
 }
 
+
+
 void exitWithSaving (nodeTree_t * node, FILE * log, unsigned int isLast, unsigned int numTABs)
 {
  	MY_ASSERT (node == nullptr, "There is no access to the node of the tree");
 	MY_ASSERT (log == nullptr, "There is no access to the logfile");
 
-	// printf ("numTABs = %u\n", numTABs);
 	printfTAB (numTABs, log);
 	if (isLast == NO_LAST)
 	{
 		fprintf (log, "?%s\n", node->feature);
-		printf ("\nKKKKEEEEEEEEEEEKKKKK\n\n");
 		if (node->leftDescendant->leftDescendant == nullptr && node->leftDescendant->rightDescendant == nullptr)
 		{
-			// printf ("node->leftDescendant/LAST = %p\n", node->leftDescendant);
-			printf ("node->leftDescendant->feature/LAST = %s\n", node->leftDescendant->feature);
 			exitWithSaving (node->leftDescendant, log, LAST, ++numTABs);
 		}
 		else
 		{
-			// printf ("node->leftDescendant/NO_LAST = %p\n", node->leftDescendant);
-			printf ("node->leftDescendant->feature/NO_LAST = %s\n", node->leftDescendant->feature);
 			exitWithSaving (node->leftDescendant, log, NO_LAST, ++numTABs);
 		}
 
 		if (node->rightDescendant->leftDescendant == nullptr && node->rightDescendant->rightDescendant == nullptr)
 		{
-			// printf ("node->rightDescendant/LAST = %p\n", node->rightDescendant);
-			printf ("node->rightDescendant->feature/LAST = %s\n", node->rightDescendant->feature);
 			exitWithSaving (node->rightDescendant, log, LAST, numTABs);
 		}
 		else
 		{
-			// printf ("node->rightDescendant/NO_LAST = %p\n", node->rightDescendant);
-			printf ("node->rightDescendant->feature/NO_LAST = %s\n", node->rightDescendant->feature);
 			exitWithSaving (node->rightDescendant, log, NO_LAST, numTABs);
 		}
 	}
 	else
 		fprintf (log, ".%s\n", node->feature);
-
-
 }
 
 void printfTAB (unsigned int numTABs, FILE * log)
 {
 	MY_ASSERT (log == nullptr, "There is no access to the logfile");
 
-	// printf ("func PRINTFTAB: numTABs = %u\n", numTABs);
 	for (unsigned int i = 0; i < numTABs; i++)
 	{
 		fprintf (log, "  ");
@@ -648,12 +613,16 @@ int processAnswer (void)
 	int answer = getchar ();
     MY_ASSERT (answer == EOF, "Command processing error");
 
-	// printf ("IN PROCESS ANSWER: answer = %c and in ascii \"%d\"\n", answer, answer);
-
     while (getchar() != '\n') {;}
 
-	if (answer == noMACROS || answer == NOMACROS) return 0;
-	else if (answer == yesMACROS || answer == YESMACROS) return 1;
+	if (answer == noMACROS || answer == NOMACROS)
+	{
+		return 0;
+	}
+	else if (answer == yesMACROS || answer == YESMACROS)
+	{
+		return 1;
+	}
 	else
 	{
 		printf ("Please, enter letter \"Y\" or \"y\" if you're agree with question, and \"N\" or \"n\" otherwise\n");
@@ -667,9 +636,6 @@ void uploadTree (nodeTree_t ** tree)
 {
 	MY_ASSERT (tree == nullptr, "There is no access to tree");
 
-	// printf ("in uploadTree (ptr ptr) tree = %p\n", tree);
-	// printf ("in uploadTree (ptr) *tree = %p\n", *tree);
-
 	infoAboutCustomTree_t customTree = {};
 	readingFile (&customTree);
 
@@ -677,45 +643,13 @@ void uploadTree (nodeTree_t ** tree)
 
 	char ** arrayStrings = selectPlace(customTree.nStrings);
 
-	//ok
-
-	// printf ("customTree.sizeFile = %zu\n", customTree.sizeFile);
-	printf ("customTree.nStrings = %zu\n", customTree.nStrings);
-
 	fillingArrayOfPtrs (customTree.sizeFile, customTree.nStrings, arrayStrings, customTree.bufWithTree);
 
-	// no ok
-
-	// nodeTree_t * camoc = (nodeTree_t *) calloc (1, sizeof (nodeTree_t));
-	// printf ("in uploadTree (ptr) camoc = %p\n", camoc);
-
-	// for (size_t i = 0; i < customTree.nStrings; i++)
-	// {
-	// 	printf ("arrayStrings[%zu] = %s\n", i, arrayStrings[i]);
-	// }
-
-// 	printf ("customTree.nStrings = %zu\n", customTree.nStrings);
-// 	printf ("before calloc\n");
-// 	printf ("sizeof (nodeTree_t) = %zu\n", sizeof (nodeTree_t));
-//
-// 	printf ("before calloc *tree = %p\n", *tree);
-
 	*tree = (nodeTree_t *) calloc (customTree.nStrings, sizeof (nodeTree_t));
-	// printf ("after calloc\n");
 	MY_ASSERT (*tree == nullptr, "Unable to allocate new memory");
 
-// 	printf ("after calloc *tree = %p\n", *tree);
-//
-// 	printf ("before createNode\n");
-
 	struct returnRecurtion recInfo = {};
-	recInfo.numString = 0;
 	createNodeForUploadTree (*tree, customTree, arrayStrings, recInfo);
-
-	// FILE * fileDumpUploadTree = fopen ("dump.txt", "a");
-	// exitWithSaving (*tree, fileDumpUploadTree, NO_LAST, 0);
-
-	// printf ("end of work of func UPLOAD_TREE\n\n");
 }
 
 struct returnRecurtion createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings, struct returnRecurtion recInfo)
@@ -723,17 +657,11 @@ struct returnRecurtion createNodeForUploadTree (nodeTree_t * node, infoAboutCust
 	char * ptrToQuestion = nullptr;
 	char * ptrToFeature  = nullptr;
 
-	printf ("\nThere is dump of information about custom tree:\n");
-	printf ("**nStrings = %zu\n", customTree.nStrings);
-	printf ("**sizeFile = %zu\n", customTree.sizeFile);
-	printf ("arrayStrings[%zu] = %s\n\n", recInfo.numString, arrayStrings[recInfo.numString]);
-
 	if ((ptrToQuestion = strchr(arrayStrings[recInfo.numString], '?')) != nullptr)
 	{
 		node->feature = readStringFromBuf(ptrToQuestion+1);
 		node->leftDescendant = node+1;
 		node->leftDescendant->parent = node;
-		printf ("node->feature (struct:%zu) = %s\n", recInfo.numString, node->feature);
 
 		char * nameLeftDescendant = nullptr;
 		char * nameRightDescendant = nullptr;
@@ -744,15 +672,6 @@ struct returnRecurtion createNodeForUploadTree (nodeTree_t * node, infoAboutCust
 			struct returnRecurtion forSaveIngoThisNode = recInfo;
 			recInfo.numString = recInfo.numString+1;
 			recInfo = createNodeForUploadTree (node+1, customTree, arrayStrings, recInfo);
-			if (recInfo.nodeReturn == nullptr)
-			{
-				printf ("recInfo.nodeReturn (%zu) = nullptr\n", recInfo.numString);
-			}
-			else
-			{
-				printf ("recInfo.nodeReturn->feature (%zu) = %s\n", recInfo.numString, (recInfo.nodeReturn)->feature);
-				printf ("and now we are in node->feature = %s\n", node->feature);
-			}
 
 			if (strchr(arrayStrings[recInfo.numString], '?'))
 			{
@@ -784,8 +703,6 @@ struct returnRecurtion createNodeForUploadTree (nodeTree_t * node, infoAboutCust
 		}
 		else
 		{
-			printf ("I'm here!\n");
-
 			node->rightDescendant = node+2;
 			node->rightDescendant->parent = node;
 
@@ -831,7 +748,6 @@ void readingFile (infoAboutCustomTree_t * customTree)
 	MY_ASSERT (nameFile == nullptr, "Unable to allocate new memory");
 
 	getString (nameFile);
-	// printf ("nameFile = %s\n", nameFile);
 
 	FILE * inputTree = fopen ((const char *) nameFile, "rb");
 	MY_ASSERT (inputTree == nullptr, "Unable to open the file with your tree");
@@ -839,17 +755,12 @@ void readingFile (infoAboutCustomTree_t * customTree)
 	stat ((const char *) nameFile, &fileInfo);
 
 	customTree->sizeFile = fileInfo.st_size;
-	// printf ("customTree->sizeFile = %zu\n", customTree->sizeFile);
 
 	customTree->bufWithTree = (char *) calloc (customTree->sizeFile + 1, sizeof(char));
 	MY_ASSERT (customTree->bufWithTree == nullptr, "Error in allocating memory for saving");
 	(customTree->bufWithTree)[customTree->sizeFile] = '\0';
 
-	fread (customTree->bufWithTree, customTree->sizeFile+1, 1, inputTree); //нужен ли +1?
-
-	// FILE * forDump = fopen ("dump.txt", "wb");
-	// MY_ASSERT (forDump == nullptr, "Unable to open dump.txt");
-	// fwrite (customTree->bufWithTree, customTree->sizeFile+1, 1, forDump);
+	fread (customTree->bufWithTree, customTree->sizeFile+1, 1, inputTree);
 }
 
 void correctBuf (infoAboutCustomTree_t * const customTree)
@@ -869,7 +780,6 @@ char ** selectPlace (size_t nStrings)
 {
 	char ** array = (char **) calloc (nStrings, sizeof (char *));
 	MY_ASSERT (array == nullptr, "Unable to allocate new memory\n");
-	// printf ("in selectPlace: array = %p\n", array);
 	return array;
 }
 
@@ -879,30 +789,17 @@ void fillingArrayOfPtrs (size_t nElems, size_t nStrings, char ** arrayStrings, c
 	MY_ASSERT (bufElems == nullptr, "There is no access to buffer of elements");
 
 	arrayStrings[0] = bufElems;
-	// printf ("arrayStrings[0] = %s\n", arrayStrings[0]);
 	size_t j = 1;
 
-	// printf ("sizeof (nodeTree_t) = %zu\n", sizeof (nodeTree_t));
-
-	// nodeTree_t * camoc = (nodeTree_t *) calloc (1, sizeof (nodeTree_t));
-	// printf ("AAAAAAAAAAAAAA in fillingArrayOfPtrs: camoc = %p\n", camoc);
-
-	for (size_t i = 0; i < nElems && *bufElems != EOF && j < nStrings; i++) //здесь была ошибка
+	for (size_t i = 0; i < nElems && *bufElems != EOF && j < nStrings; i++)
 	{
 		if (*bufElems == '\0')
 		{
 			arrayStrings[j] = bufElems+1;
-			// printf ("arrayStrings[%zu] = %s\n", j, arrayStrings[j]);
 			j++;
 		}
 		bufElems++;
 	}
-
-	// nodeTree_t * cam = (nodeTree_t *) calloc (1, sizeof (nodeTree_t));
-	// printf ("AAAAAAAAAAAAAA in fillingArrayOfPtrs: cam = %p, cam++ = %p, cam+2 = %p\n", cam, cam+1, cam+2);
-
-	if (nStrings == j+1)
-		printf ("nStrings = %zu\n", nStrings);
 }
 
 char * readStringFromBuf (char * bufSource)
@@ -911,13 +808,7 @@ char * readStringFromBuf (char * bufSource)
 	MY_ASSERT (bufDstn == nullptr, "Unable to allocate new memory for the buf");
 	MY_ASSERT (bufSource == nullptr, "There is no access to buf");
 
-	// printf ("in readStringFromBuf: %c\n", *bufSource);
-	// printf ("before for bufSource = %s\n", bufSource);
-
 	bufDstn = strncpy (bufDstn, bufSource, MAX_SIZE_FEATURE);
-
-	// printf ("bufDstn = %s\n", bufDstn);
-	// printf ("bufSource = %s\n", bufSource);
 
 	return bufDstn;
 }

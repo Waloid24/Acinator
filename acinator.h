@@ -37,8 +37,7 @@ enum IS_LAST {
     NO_LAST
 };
 
-static unsigned int timesCreatePictureTree = 1;
-
+static unsigned int NUMBER_GRAPHICAL_TREE_DUMPS = 1;
 
 //--------------------------------functions-------------------------------------------------
 
@@ -61,29 +60,30 @@ void         addNewNode         (nodeTree_t * currentNode);
 int          processAnswer      (void);
 
 void         uploadTree               (nodeTree_t ** tree);
-//nodeTree_t * createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings, int i);
+
 struct returnRecurtion createNodeForUploadTree (nodeTree_t * node, infoAboutCustomTree_t customTree, char ** arrayStrings, struct returnRecurtion recInfo);
 
-void         getString                (char * nameFile);
-void         readingFile              (infoAboutCustomTree_t * customTree);
-void         correctBuf               (infoAboutCustomTree_t * const customTree);
-char      ** selectPlace              (size_t nStrings);
-void         fillingArrayOfPtrs       (size_t nElems, size_t nStrings, char ** arrayStrings, char * bufElems);
-char       * readStringFromBuf        (char * bufSource);
-void         selectionInGuessingMode  (nodeTree_t ** tree);
+void            getString                (char * nameFile);
+void            readingFile              (infoAboutCustomTree_t * customTree);
+void            correctBuf               (infoAboutCustomTree_t * const customTree);
+char         ** selectPlace              (size_t nStrings);
+void            fillingArrayOfPtrs       (size_t nElems, size_t nStrings, char ** arrayStrings, char * bufElems);
+char          * readStringFromBuf        (char * bufSource);
+void            selectionInGuessingMode  (nodeTree_t ** tree);
 
-int          my_strcmp                (const char * string1, const char * string2);
-void         definingMode             (nodeTree_t * node, FILE * log);
-int          defineOfWord             (nodeTree_t * node);
-unsigned int findObject               (nodeTree_t * node, char * nameObject, unsigned int isObejectFound);
-int          compareObject            (nodeTree_t * node, FILE * log);
-nodeTree_t * findObjectForCompare     (nodeTree_t * node, char * nameObject, nodeTree_t * desiredObject);
-void         printСomparison          (nodeTree_t * node, nodeTree_t * firstObject, nodeTree_t * secondObject);
+int             myStrcmp                 (const char * string1, const char * string2);
+void            definingMode            (nodeTree_t * node, FILE * log);
+int             defineOfWord            (nodeTree_t * node);
+unsigned int    findObject              (nodeTree_t * node, char * nameObject, unsigned int isObejectFound);
+int             compareObjects          (nodeTree_t * node, FILE * log);
+nodeTree_t *    findObjectForCompare    (nodeTree_t * node, char * nameObject, nodeTree_t * desiredObject);
+void printСomparison (nodeTree_t * node, nodeTree_t * firstObject, nodeTree_t * secondObject);
 
-void showTree (const nodeTree_t * tree, FILE * const log);
-void graphTree (const nodeTree_t * node, const char * nameGraphDOTfileTree);
-void nodeGraph (const nodeTree_t * node, FILE * graphicDump);
-void createPictureTree (const char * nameDOTfile, unsigned int timesCreatePicture);
-static void createHTMLfileTree(const char * nameFileDump, unsigned int * timesCreatePicture);
+
+void            showTree                (const nodeTree_t * tree);
+void            dotFileHeaderTree       (const nodeTree_t * node, const char * nameGraphDOTfileTree);
+void            writeNodeToDotFile      (const nodeTree_t * node, FILE * graphicDump);
+void            createFileWithTreeImage (const char * nameDOTfile, unsigned int timesCreatePicture);
+static void     createHTMLfileTree      (const char * nameFileDump, unsigned int * timesCreatePicture);
 
 #endif
